@@ -61,7 +61,9 @@ mgu.run({
 
     const showing = () => settings.get('show') === 'on';
     const utcOffset = () => Number(settings.get('utcOffset')) || 0;
-    const vehicle = startVehicle(ctx, { redline: 7000 });
+    // B47 diesel demo sweep: keep the simulated tachometer in a diesel range.
+    // Live engine speed is read from the vehicle and is not clipped here.
+    const vehicle = startVehicle(ctx, { redline: 5000 });
 
     const library = new ThemeLibrary({ dataDir: ctx.dataDir || process.cwd(), log });
     const themeKeys = () => index.themes.map((t) => t.id).concat(library.list().map((t) => t.key));
