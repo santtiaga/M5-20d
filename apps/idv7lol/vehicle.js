@@ -19,7 +19,7 @@
 const fs = require('fs');
 const path = require('path');
 const Car = require('./kit/car');
-const { SignalStore, driveModeOf, transmissionModeOf, GEAR_TEXT } = require('./signals');
+const { SignalStore, driveModeOf, programModeOf, gearboxModeOf, gearOf, stageOf, selectionOf, GEAR_TEXT } = require('./signals');
 const { FuelGauge, parseTank } = require('./fuel');
 
 /** The engine unit's fuel level: OBD-II PID 2F, A x 100 / 255 (a public standard, no BMW table). */
@@ -167,21 +167,35 @@ function startVehicle(ctx, opts) {
     'de.bmw.infotainment.misc.MDrive': {
       dataDisplayGearbox: (v) => {
         seen('dataDisplayGearbox', v);
-        const mode = transmissionModeOf(v);
-        // Unknown payloads are left unset rather than guessed as Drive.
+        const mode = programModeOf(v);
+        // M Vitals / Redline: displayProgramGearbox is S_MINUS_PROGRAMM / M_MINUS_PROGRAMM,
+        // or wire enum 1 / 2; D is only accepted as explicit 0 or a D... value.
         if (mode) store.set('transmission.mode', mode);
       },
     },
     'de.bmw.infrastructure.VehicleInformation': {
       statusGearboxDrive: (v) => {
         seen('statusGearboxDrive', v);
-        const mode = transmissionModeOf(v);
+        // M Vitals: actual gear is G1..G10 (wire 3..12), R=1, N/P=2;
+        // selector stage is P=1, R=2, N=3, D=4. D/S/M is a separate field.
+        const gear = gearOf(v && v.statusActualGearDrive);
+        const stage = stageOf(v && v.statusActualStageDrive);
+        if (gear !== undefined || stage !== undefined) {
+          const text = GEAR_TEXT(gear, stage);
+          if (text) store.set('transmission.gear', text);
+        }
+        const mode = gearboxModeOf(v);
         if (mode) store.set('transmission.mode', mode);
       },
       DataPowerTrain2: (v) => {
         seen('DataPowerTrain2', v);
-        const mode = transmissionModeOf(v);
-        if (mode) store.set('transmission.mode', mode);
+        // M Vitals: N=1, R=2, P=3, NP=4, _1=5 ... _9=13.
+        // This event supplies selector/gear only, never the D/S/M programme.
+        const selection = selectionOf(v && v.statusGearSelectionDrive);
+        if (selection) {
+          const text = GEAR_TEXT(selection.gear, selection.stage);
+          if (text) store.set('transmission.gear', text);
+        }
       },
     },
     'de.bmw.infrastructure.analytics.BasicDataSet': {
