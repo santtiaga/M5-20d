@@ -172,6 +172,18 @@ function startVehicle(ctx, opts) {
         if (mode) store.set('transmission.mode', mode);
       },
     },
+    'de.bmw.infrastructure.VehicleInformation': {
+      statusGearboxDrive: (v) => {
+        seen('statusGearboxDrive', v);
+        const mode = transmissionModeOf(v);
+        if (mode) store.set('transmission.mode', mode);
+      },
+      DataPowerTrain2: (v) => {
+        seen('DataPowerTrain2', v);
+        const mode = transmissionModeOf(v);
+        if (mode) store.set('transmission.mode', mode);
+      },
+    },
     'de.bmw.infrastructure.analytics.BasicDataSet': {
       basicDataSet: (v) => {
         seen('basicDataSet', v);
