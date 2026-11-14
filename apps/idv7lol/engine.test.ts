@@ -25,9 +25,10 @@ interface LineLayout {
 const { ClusterEngine } = require('./engine.js') as {
   ClusterEngine: new (o: Record<string, unknown>) => Engine;
 };
-const { SignalStore, driveModeOf, GEAR_TEXT } = require('./signals.js') as {
+const { SignalStore, driveModeOf, transmissionModeOf, GEAR_TEXT } = require('./signals.js') as {
   SignalStore: new () => Store;
   driveModeOf: (raw: unknown) => string | null;
+  transmissionModeOf: (raw: unknown) => string | null;
   GEAR_TEXT: (gear: unknown, stage: unknown) => string | null;
 };
 const { layoutLine, formatNumber } = require('./text.js') as {
@@ -509,6 +510,19 @@ describe('vehicle helpers', () => {
     expect(GEAR_TEXT(3, 'D')).toBe('3');
     expect(GEAR_TEXT(-1, 'R')).toBe('R');
     expect(GEAR_TEXT(0, 'P')).toBe('P');
+  });
+
+  it('decodes gearbox mode only from explicit mode fields or tokens', () => {
+    expect(transmissionModeOf('M_MINUS')).toBe('M');
+    expect(transmissionModeOf('S_MINUS')).toBe('S');
+    expect(transmissionModeOf({ gearboxMode: 'MANUAL' })).toBe('M');
+    expect(transmissionModeOf({ wrapper: { transmissionMode: 'SPORT_MODE' } })).toBe('S');
+    expect(transmissionModeOf('{"mode":"D"}')).toBe('D');
+    // Numeric values and unrelated fields are not interpreted as gearbox mode.
+    expect(transmissionModeOf({ gear: 2 })).toBe(null);
+    expect(transmissionModeOf({ unrelated: 1, status: 2 })).toBe(null);
+    expect(transmissionModeOf('SPORT')).toBe(null);
+    expect(transmissionModeOf(null)).toBe(null);
   });
 });
 
