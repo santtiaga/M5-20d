@@ -4,14 +4,14 @@
   "name": "BMW G30 / G31 F90 M Cluster",
   "version": "0.1.0",
   "author": "santtiaga",
-  "description": "F90 M-inspired cluster for BMW G31 LCI 520d B47 MHEV Stage 1 (245 hp / 528 Nm), with a non-linear 0–5000 rpm tachometer.",
+  "description": "F90 M-inspired cluster for BMW G31 LCI 520d B47D20B 48V MHEV Stage 1 (245 hp / 528 Nm), with a non-linear 0–5000 rpm tachometer.",
   "license": "GPL-3.0-or-later",
   "target": {
     "platform": "idrive7-mgu",
     "display": "kombi-id7-12.3",
     "renderer": "cluster-render"
   },
-  "vehicleProfile": "turbo-ice",
+  "vehicleProfile": "g30-b47-mhev",
   "layout": {
     "width": 1920,
     "height": 720,
@@ -286,7 +286,7 @@
       },
       "props": {
         "startAngle": 135,
-        "sweepAngle": 54,
+        "sweepAngle": 43.2,
         "track": {
           "show": true,
           "color": "$track",
@@ -337,8 +337,8 @@
         "smoothing": 0.035
       },
       "props": {
-        "startAngle": 189,
-        "sweepAngle": 54,
+        "startAngle": 178.2,
+        "sweepAngle": 43.2,
         "track": {
           "show": true,
           "color": "$track",
@@ -385,12 +385,12 @@
       "binding": {
         "signal": "engine.rpm",
         "min": 2000,
-        "max": 3250,
+        "max": 4000,
         "smoothing": 0.035
       },
       "props": {
-        "startAngle": 243,
-        "sweepAngle": 67.5,
+        "startAngle": 221.4,
+        "sweepAngle": 129.6,
         "track": {
           "show": true,
           "color": "$track",
@@ -436,13 +436,13 @@
       "height": 500,
       "binding": {
         "signal": "engine.rpm",
-        "min": 3250,
+        "min": 4000,
         "max": 4500,
         "smoothing": 0.035
       },
       "props": {
-        "startAngle": 310.5,
-        "sweepAngle": 67.5,
+        "startAngle": 351,
+        "sweepAngle": 32.4,
         "track": {
           "show": true,
           "color": "$track",
@@ -493,8 +493,8 @@
         "smoothing": 0.035
       },
       "props": {
-        "startAngle": 378,
-        "sweepAngle": 27,
+        "startAngle": 383.4,
+        "sweepAngle": 21.6,
         "track": {
           "show": true,
           "color": "$track",
