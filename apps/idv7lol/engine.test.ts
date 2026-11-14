@@ -25,10 +25,10 @@ interface LineLayout {
 const { ClusterEngine } = require('./engine.js') as {
   ClusterEngine: new (o: Record<string, unknown>) => Engine;
 };
-const { SignalStore, driveModeOf, transmissionModeOf, GEAR_TEXT } = require('./signals.js') as {
+const { SignalStore, driveModeOf, transmissionModeOf, programModeOf, gearboxModeOf, gearOf, stageOf, selectionOf, GEAR_TEXT } = require('./signals.js') as {
   SignalStore: new () => Store;
   driveModeOf: (raw: unknown) => string | null;
-  transmissionModeOf: (raw: unknown) => string | null;
+  transmissionModeOf: (raw: unknown) => string | null;\n  programModeOf: (raw: unknown) => string | null;\n  gearboxModeOf: (raw: unknown) => string | null;\n  gearOf: (raw: unknown) => number | undefined;\n  stageOf: (raw: unknown) => string | undefined;\n  selectionOf: (raw: unknown) => { stage?: string; gear: number } | undefined;
   GEAR_TEXT: (gear: unknown, stage: unknown) => string | null;
 };
 const { layoutLine, formatNumber } = require('./text.js') as {
@@ -512,17 +512,36 @@ describe('vehicle helpers', () => {
     expect(GEAR_TEXT(0, 'P')).toBe('P');
   });
 
-  it('decodes gearbox mode only from explicit mode fields or tokens', () => {
-    expect(transmissionModeOf('M_MINUS')).toBe('M');
-    expect(transmissionModeOf('S_MINUS')).toBe('S');
-    expect(transmissionModeOf({ gearboxMode: 'MANUAL' })).toBe('M');
-    expect(transmissionModeOf({ wrapper: { transmissionMode: 'SPORT_MODE' } })).toBe('S');
-    expect(transmissionModeOf('{"mode":"D"}')).toBe('D');
-    // Numeric values and unrelated fields are not interpreted as gearbox mode.
+  it('decodes gearbox mode using the M Vitals / Redline field enums', () => {
+    expect(programModeOf({ displayProgramGearbox: 'S_MINUS_PROGRAMM' })).toBe('S');
+    expect(programModeOf({ displayProgramGearbox: 'M_MINUS_PROGRAMM' })).toBe('M');
+    expect(programModeOf({ displayProgramGearbox: 1 })).toBe('S');
+    expect(programModeOf({ displayProgramGearbox: 2 })).toBe('M');
+    expect(programModeOf({ displayProgramGearbox: 0 })).toBe('D');
+    expect(programModeOf({ displayProgramGearbox: 'DYNAMIC_DRIVE' })).toBe('D');
+    expect(programModeOf({ displayProgramGearbox: 99 })).toBe(null);
+    expect(gearboxModeOf({ statusActualStageDrive: 'D', statusActualGearDrive: 'G4', gearboxProgram: 'M_MINUS_PROGRAMM' })).toBe('M');
+    expect(gearboxModeOf({ statusActualStageDrive: 'D', statusActualGearDrive: 'G4' })).toBe(null);
+    expect(transmissionModeOf('{"displayProgramGearbox":"S_MINUS_PROGRAMM"}')).toBe('S');
     expect(transmissionModeOf({ gear: 2 })).toBe(null);
     expect(transmissionModeOf({ unrelated: 1, status: 2 })).toBe(null);
-    expect(transmissionModeOf('SPORT')).toBe(null);
-    expect(transmissionModeOf(null)).toBe(null);
+  });
+
+  it('decodes M Vitals gearbox gear and selector enums', () => {
+    expect(gearOf('G1')).toBe(1);
+    expect(gearOf(3)).toBe(1);
+    expect(gearOf(12)).toBe(10);
+    expect(gearOf(1)).toBe(-1);
+    expect(gearOf(2)).toBe(0);
+    expect(stageOf(1)).toBe('P');
+    expect(stageOf(4)).toBe('D');
+    expect(selectionOf(1)).toEqual({ stage: 'N', gear: 0 });
+    expect(selectionOf(2)).toEqual({ stage: 'R', gear: -1 });
+    expect(selectionOf(3)).toEqual({ stage: 'P', gear: 0 });
+    expect(selectionOf(4)).toEqual({ stage: undefined, gear: 0 });
+    expect(selectionOf('_5')).toEqual({ stage: 'D', gear: 1 });
+    expect(selectionOf(13)).toEqual({ stage: 'D', gear: 9 });
+    expect(selectionOf(99)).toBe(undefined);
   });
 });
 
