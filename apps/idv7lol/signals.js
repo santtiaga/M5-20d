@@ -72,7 +72,7 @@ const MODE_TOKENS = {
 function modeToken(value) {
   if (typeof value !== 'string') return null;
   const token = value.trim().toUpperCase().replace(/[\s-]+/g, '_');
-  return MODE_TOKENS[token] || null;
+  return Object.prototype.hasOwnProperty.call(MODE_TOKENS, token) ? MODE_TOKENS[token] : null;
 }
 
 function transmissionModeOf(raw) {
