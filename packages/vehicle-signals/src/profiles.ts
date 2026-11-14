@@ -44,6 +44,15 @@ export const PROFILES: readonly VehicleProfile[] = [
     overrides: { 'engine.rpm': { max: 8000 }, 'engine.rpm.redline': { max: 8000 } },
   },
   {
+    id: 'g30-b47-mhev',
+    name: 'BMW G30 LCI 520d B47 48V mild hybrid',
+    description:
+      'Longitudinal B47 diesel with turbocharging and 48 V mild-hybrid system; not a plug-in hybrid or BEV.',
+    // The current catalog Hybrid group describes traction-battery PHEV/BEV data.
+    // Keep those signals excluded until separate 48 V MHEV signals are mapped and verified.
+    excluded: [...HYBRID_SIGNALS],
+  },
+  {
     id: 'phev',
     name: 'Plug-in hybrid',
     description: 'Combustion engine plus a traction battery (xDrive45e, 330e, 530e…).',
