@@ -80,7 +80,7 @@ function transmissionModeOf(raw) {
     const direct = modeToken(raw);
     if (direct) return direct;
     // Some MGU methods expose a JSON document as a string.
-    if (/^[{[]/.test(raw.trim())) {
+    if (/^(\\{|\\[)/.test(raw.trim())) {
       try {
         return transmissionModeOf(JSON.parse(raw));
       } catch (_e) {
