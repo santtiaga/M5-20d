@@ -48,6 +48,70 @@ function driveModeOf(raw) {
   return null;
 }
 
+/**
+ * Decode only explicit gearbox-program values. The former JSON-wide checks
+ * for "1" / "2" also matched unrelated payload fields and could label D as
+ * S or M. Numeric enum values are deliberately not guessed until the MGU
+ * payload's field and enum mapping have been captured on the target car.
+ */
+const TRANSMISSION_MODE_KEYS = /^(mode|gearboxMode|transmissionMode|shiftMode|program|gearboxProgram|dataDisplayGearbox)$/i;
+const MODE_TOKENS = {
+  M: 'M',
+  MANUAL: 'M',
+  MANUAL_MODE: 'M',
+  M_MINUS: 'M',
+  S: 'S',
+  SPORT_MODE: 'S',
+  SPORT_PROGRAM: 'S',
+  S_MINUS: 'S',
+  D: 'D',
+  DRIVE: 'D',
+  DRIVE_MODE: 'D',
+};
+
+function modeToken(value) {
+  if (typeof value !== 'string') return null;
+  const token = value.trim().toUpperCase().replace(/[\\s-]+/g, '_');
+  return MODE_TOKENS[token] || null;
+}
+
+function transmissionModeOf(raw) {
+  if (typeof raw === 'string') {
+    const direct = modeToken(raw);
+    if (direct) return direct;
+    // Some MGU methods expose a JSON document as a string.
+    if (/^[{[]/.test(raw.trim())) {
+      try {
+        return transmissionModeOf(JSON.parse(raw));
+      } catch (_e) {
+        return null;
+      }
+    }
+    return null;
+  }
+  if (!raw || typeof raw !== 'object') return null;
+  for (const key of Object.keys(raw)) {
+    const value = raw[key];
+    if (TRANSMISSION_MODE_KEYS.test(key)) {
+      const direct = modeToken(value);
+      if (direct) return direct;
+      if (value && typeof value === 'object') {
+        const nested = transmissionModeOf(value);
+        if (nested) return nested;
+      }
+    }
+  }
+  // Permit known mode fields nested one level inside a wrapper object.
+  for (const key of Object.keys(raw)) {
+    const value = raw[key];
+    if (value && typeof value === 'object') {
+      const nested = transmissionModeOf(value);
+      if (nested) return nested;
+    }
+  }
+  return null;
+}
+
 const GEAR_TEXT = (gear, stage) => {
   if (stage === 'P' || stage === 'R' || stage === 'N') return stage;
   if (typeof gear === 'number') {
@@ -58,4 +122,4 @@ const GEAR_TEXT = (gear, stage) => {
   return stage || null;
 };
 
-module.exports = { SignalStore, driveModeOf, GEAR_TEXT };
+module.exports = { SignalStore, driveModeOf, transmissionModeOf, GEAR_TEXT };
