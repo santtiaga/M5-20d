@@ -71,7 +71,7 @@ const MODE_TOKENS = {
 
 function modeToken(value) {
   if (typeof value !== 'string') return null;
-  const token = value.trim().toUpperCase().replace(/[\\s-]+/g, '_');
+  const token = value.trim().toUpperCase().replace(/[\s-]+/g, '_');
   return MODE_TOKENS[token] || null;
 }
 
@@ -80,7 +80,7 @@ function transmissionModeOf(raw) {
     const direct = modeToken(raw);
     if (direct) return direct;
     // Some MGU methods expose a JSON document as a string.
-    if (/^(\\{|\\[)/.test(raw.trim())) {
+    if (/^(\{|\[)/.test(raw.trim())) {
       try {
         return transmissionModeOf(JSON.parse(raw));
       } catch (_e) {
