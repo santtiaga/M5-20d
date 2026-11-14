@@ -1090,7 +1090,7 @@
               "signal": "engine.torque"
             },
             "format": "0",
-            "unit": "Nm",
+            "unit": "nm",
             "showUnit": true
           },
           {
@@ -1109,7 +1109,7 @@
               "signal": "transmission.oil.temp"
             },
             "format": "0",
-            "unit": "°C",
+            "unit": "celsius",
             "showUnit": true
           },
           {
@@ -1118,7 +1118,7 @@
               "signal": "engine.coolant.temp"
             },
             "format": "0",
-            "unit": "°C",
+            "unit": "celsius",
             "showUnit": true
           }
         ],
