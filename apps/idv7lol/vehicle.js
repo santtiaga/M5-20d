@@ -19,7 +19,7 @@
 const fs = require('fs');
 const path = require('path');
 const Car = require('./kit/car');
-const { SignalStore, driveModeOf, GEAR_TEXT } = require('./signals');
+const { SignalStore, driveModeOf, transmissionModeOf, GEAR_TEXT } = require('./signals');
 const { FuelGauge, parseTank } = require('./fuel');
 
 /** The engine unit's fuel level: OBD-II PID 2F, A x 100 / 255 (a public standard, no BMW table). */
@@ -167,10 +167,9 @@ function startVehicle(ctx, opts) {
     'de.bmw.infotainment.misc.MDrive': {
       dataDisplayGearbox: (v) => {
         seen('dataDisplayGearbox', v);
-        const s = JSON.stringify(v || '');
-        if (/M_MINUS|"2"|: ?2\b/.test(s)) store.set('transmission.mode', 'M');
-        else if (/S_MINUS|"1"|: ?1\b/.test(s)) store.set('transmission.mode', 'S');
-        else store.set('transmission.mode', 'D');
+        const mode = transmissionModeOf(v);
+        // Unknown payloads are left unset rather than guessed as Drive.
+        if (mode) store.set('transmission.mode', mode);
       },
     },
     'de.bmw.infrastructure.analytics.BasicDataSet': {
