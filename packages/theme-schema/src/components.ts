@@ -78,6 +78,8 @@ export const LinePropsSchema = z.object({
 export const ArcPropsSchema = z.object({
   startAngle: z.number().default(135),
   sweepAngle: z.number().min(-360).max(360).default(270),
+  /** Optional piecewise-linear mapping from binding values to arc fractions. */
+  scale: GaugeScaleSchema.optional(),
   stroke: StrokeSchema,
   /** Optional pie fill between the arc and the centre. */
   fill: FillSchema.optional(),
@@ -253,6 +255,29 @@ export const GaugeValueTextSchema = z.object({
  * The arc is inscribed in the component box; the value sweeps from
  * startAngle over sweepAngle (degrees, 0 = 3 o'clock, positive clockwise).
  */
+/**
+ * Optional nonlinear mapping for a circular gauge. `value1` / `value2` are
+ * expressed in the binding's display unit; `position1` / `position2` are
+ * fractions of the angular sweep.
+ */
+export const GaugeScaleSchema = z
+  .object({
+    value1: z.number(),
+    value2: z.number(),
+    position1: z.number().min(0).max(1),
+    position2: z.number().min(0).max(1),
+  })
+  .superRefine((scale, ctx) => {
+    if (scale.value1 >= scale.value2)
+      ctx.addIssue({ code: 'custom', path: ['value2'], message: 'value2 must be greater than value1.' });
+    if (!(0 < scale.position1 && scale.position1 < scale.position2 && scale.position2 < 1))
+      ctx.addIssue({
+        code: 'custom',
+        path: ['position2'],
+        message: 'Scale positions must be strictly increasing and inside 0..1.',
+      });
+  });
+
 export const ArcGaugePropsSchema = z.object({
   startAngle: z.number().default(135),
   sweepAngle: z.number().min(-360).max(360).default(270),

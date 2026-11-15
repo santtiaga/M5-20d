@@ -35,6 +35,7 @@ export type ShaderKind =
   | 'arc-band'
   | 'arc-ticks'
   | 'needle'
+  | 'tachometer'
   | 'bar'
   | 'bar-ticks'
   | 'text'
