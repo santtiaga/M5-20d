@@ -271,8 +271,8 @@
       }
     },
     {
-      "id": "tacho-segment-1",
-      "name": "Tachometer 0–1000 rpm",
+      "id": "tacho",
+      "name": "F90 nonlinear GPU tachometer",
       "type": "gauge.arc",
       "x": 710,
       "y": 150,
@@ -281,220 +281,18 @@
       "binding": {
         "signal": "engine.rpm",
         "min": 0,
-        "max": 1000,
-        "smoothing": 0.035
-      },
-      "props": {
-        "startAngle": 135,
-        "sweepAngle": 43.2,
-        "track": {
-          "show": true,
-          "color": "$track",
-          "width": 18,
-          "cap": "butt"
-        },
-        "fill": {
-          "show": true,
-          "color": "$success",
-          "width": 18,
-          "mode": "solid",
-          "cap": "butt"
-        },
-        "ticks": {
-          "show": false
-        },
-        "labels": {
-          "show": false
-        },
-        "needle": {
-          "show": false
-        },
-        "redline": {
-          "show": false
-        },
-        "valueText": {
-          "show": false
-        },
-        "glow": {
-          "show": false,
-          "color": "$success",
-          "blur": 8
-        }
-      }
-    },
-    {
-      "id": "tacho-segment-2",
-      "name": "Tachometer 1000–2000 rpm",
-      "type": "gauge.arc",
-      "x": 710,
-      "y": 150,
-      "width": 500,
-      "height": 500,
-      "binding": {
-        "signal": "engine.rpm",
-        "min": 1000,
-        "max": 2000,
-        "smoothing": 0.035
-      },
-      "props": {
-        "startAngle": 178.2,
-        "sweepAngle": 43.2,
-        "track": {
-          "show": true,
-          "color": "$track",
-          "width": 18,
-          "cap": "butt"
-        },
-        "fill": {
-          "show": true,
-          "color": "$success",
-          "width": 18,
-          "mode": "solid",
-          "cap": "butt"
-        },
-        "ticks": {
-          "show": false
-        },
-        "labels": {
-          "show": false
-        },
-        "needle": {
-          "show": false
-        },
-        "redline": {
-          "show": false
-        },
-        "valueText": {
-          "show": false
-        },
-        "glow": {
-          "show": false,
-          "color": "$success",
-          "blur": 8
-        }
-      }
-    },
-    {
-      "id": "tacho-segment-3",
-      "name": "Tachometer 2000–3250 rpm",
-      "type": "gauge.arc",
-      "x": 710,
-      "y": 150,
-      "width": 500,
-      "height": 500,
-      "binding": {
-        "signal": "engine.rpm",
-        "min": 2000,
-        "max": 4000,
-        "smoothing": 0.035
-      },
-      "props": {
-        "startAngle": 221.4,
-        "sweepAngle": 129.6,
-        "track": {
-          "show": true,
-          "color": "$track",
-          "width": 18,
-          "cap": "butt"
-        },
-        "fill": {
-          "show": true,
-          "color": "$accent",
-          "width": 18,
-          "mode": "solid",
-          "cap": "butt"
-        },
-        "ticks": {
-          "show": false
-        },
-        "labels": {
-          "show": false
-        },
-        "needle": {
-          "show": false
-        },
-        "redline": {
-          "show": false
-        },
-        "valueText": {
-          "show": false
-        },
-        "glow": {
-          "show": false,
-          "color": "$accent",
-          "blur": 8
-        }
-      }
-    },
-    {
-      "id": "tacho-segment-4",
-      "name": "Tachometer 3250–4500 rpm",
-      "type": "gauge.arc",
-      "x": 710,
-      "y": 150,
-      "width": 500,
-      "height": 500,
-      "binding": {
-        "signal": "engine.rpm",
-        "min": 4000,
-        "max": 4500,
-        "smoothing": 0.035
-      },
-      "props": {
-        "startAngle": 351,
-        "sweepAngle": 32.4,
-        "track": {
-          "show": true,
-          "color": "$track",
-          "width": 18,
-          "cap": "butt"
-        },
-        "fill": {
-          "show": true,
-          "color": "$warning",
-          "width": 18,
-          "mode": "solid",
-          "cap": "butt"
-        },
-        "ticks": {
-          "show": false
-        },
-        "labels": {
-          "show": false
-        },
-        "needle": {
-          "show": false
-        },
-        "redline": {
-          "show": false
-        },
-        "valueText": {
-          "show": false
-        },
-        "glow": {
-          "show": true,
-          "color": "$warning",
-          "blur": 8
-        }
-      }
-    },
-    {
-      "id": "tacho-segment-5",
-      "name": "Tachometer 4500–5000 rpm",
-      "type": "gauge.arc",
-      "x": 710,
-      "y": 150,
-      "width": 500,
-      "height": 500,
-      "binding": {
-        "signal": "engine.rpm",
-        "min": 4500,
         "max": 5000,
         "smoothing": 0.035
       },
       "props": {
-        "startAngle": 383.4,
-        "sweepAngle": 21.6,
+        "startAngle": 135,
+        "sweepAngle": 270,
+        "scale": {
+          "value1": 2000,
+          "value2": 4500,
+          "position1": 0.32,
+          "position2": 0.92
+        },
         "track": {
           "show": true,
           "color": "$track",
@@ -503,19 +301,51 @@
         },
         "fill": {
           "show": true,
-          "color": "$danger",
+          "color": "$accent",
           "width": 18,
           "mode": "solid",
-          "cap": "butt"
+          "cap": "butt",
+          "zones": [
+            {
+              "from": 0,
+              "to": 2000,
+              "color": "$success"
+            },
+            {
+              "from": 2000,
+              "to": 4000,
+              "color": "$accent"
+            },
+            {
+              "from": 4000,
+              "to": 4500,
+              "color": "$warning"
+            },
+            {
+              "from": 4500,
+              "to": 5000,
+              "color": "$danger"
+            }
+          ]
         },
         "ticks": {
-          "show": false
+          "major": 0
         },
         "labels": {
           "show": false
         },
         "needle": {
-          "show": false
+          "show": true,
+          "color": "$text",
+          "width": 5,
+          "length": 0.88,
+          "tail": 0.08,
+          "shape": "tapered",
+          "cap": {
+            "show": true,
+            "radius": 14,
+            "color": "$surface"
+          }
         },
         "redline": {
           "show": false
@@ -524,8 +354,8 @@
           "show": false
         },
         "glow": {
-          "show": true,
-          "color": "$danger",
+          "show": false,
+          "color": "$warning",
           "blur": 8
         }
       }

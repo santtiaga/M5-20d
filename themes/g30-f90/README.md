@@ -24,3 +24,8 @@ Open this file in idv7lol Studio. Run theme validation, then **Build & Deploy �
 
 ## Renderer limitation
 Theme packages cannot ship arbitrary GLSL. Custom shaders must be integrated into the application/compiler and built into the app. This theme uses supported built-in components so it can be compiled as a normal USB theme.
+
+
+## Nonlinear GPU tachometer
+
+The tachometer is one `gauge.arc` with a piecewise scale: 0–2000 rpm uses 32% of the sweep, 2000–4500 uses 60%, and 4500–5000 uses 8%. The compiler emits a static track layer plus one GLSL ES 1.00 effect for the eased RPM fill and needle. The yellow and red zones are value-based, so their boundaries remain at 4000 and 4500 rpm.

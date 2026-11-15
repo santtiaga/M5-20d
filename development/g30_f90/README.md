@@ -7,3 +7,6 @@ Future renderer work belongs in the idv7lol application/compiler: extend the bui
 Vehicle target: BMW G31 LCI 520d MHEV, B47D20B, Stage 1, 245 hp / 528 Nm, 8HP51, RWD.
 
 The current vehicle signal catalog exposes engine RPM, speed, torque, power, boost, oil/coolant temperature, gearbox temperature, gear and drive mode. It does not currently expose BATT48 / PCU48 data; that requires a dedicated UDS/SOME-IP provider and must not be simulated as live vehicle data.
+
+
+The G30/F90 tachometer now uses the compiler's mapped `gauge.arc` path: a static track layer and a single dynamic GPU effect driven by the existing `engine.rpm` signal. Its scale breakpoints are 2000 rpm → 32% and 4500 rpm → 92% of the 270° sweep; the yellow and red value zones begin at 4000 and 4500 rpm. The shader is part of the built-in GLSL ES 1.00 catalog and is emitted into the MGU bundle by `tools/build/build-mgu-themes.ts`.
