@@ -1,6 +1,6 @@
 import type { ArcGaugeComponent, BarGaugeComponent, Binding } from '@idv7lol/theme-schema';
 import { unitSymbol } from '@idv7lol/vehicle-signals';
-import { DEG, clamp, normalize, polar } from '../math.js';
+import { DEG, clamp, mapGaugeScale, normalize, polar, unmapGaugeScale } from '../math.js';
 import { formatNumber } from '../format.js';
 import type { RenderContext } from '../render-context.js';
 import type { EvaluatedBinding } from '../state.js';
@@ -48,7 +48,10 @@ export const arcGaugeRenderer: ComponentRenderer<ArcGaugeComponent> = {
     const R = Math.min(w, h) / 2;
     const start = p.startAngle;
     const sweep = p.sweepAngle;
-    const angleAt = (n: number) => start + sweep * clamp(n, 0, 1);
+    const angleAt = (n: number) =>
+      start +
+      sweep *
+        (p.scale ? mapGaugeScale(min + clamp(n, 0, 1) * (max - min), min, max, p.scale) : clamp(n, 0, 1));
     const ccw = sweep < 0;
 
     // Radii, from the outside in.
@@ -91,36 +94,62 @@ export const arcGaugeRenderer: ComponentRenderer<ArcGaugeComponent> = {
       }
     }
 
-    if (p.fill.show && value !== undefined && norm > 0) {
+    const mappedNorm =
+      value === undefined
+        ? 0
+        : p.scale
+          ? mapGaugeScale(value, min, max, p.scale)
+          : norm;
+    if (p.fill.show && value !== undefined && mappedNorm > 0) {
       const box = { x: cx - bandRadius, y: cy - bandRadius, w: bandRadius * 2, h: bandRadius * 2 };
       const baseFill =
         typeof p.fill.color === 'string' ? rc.color(p.fill.color) : rc.fill(p.fill.color, box);
-      const zoneFill =
+      const zoneColorAt = (v: number) =>
         typeof p.fill.color === 'string'
-          ? rc.zoneColor(p.fill.zones, value, baseFill as string)
+          ? rc.zoneColor(p.fill.zones, v, baseFill as string)
           : baseFill;
       if (p.glow.show) rc.shadow(p.glow.color, p.glow.blur);
-      ctx.strokeStyle = zoneFill;
       ctx.lineWidth = p.fill.width;
       ctx.lineCap = p.fill.cap;
       if (p.fill.mode === 'solid') {
-        ctx.beginPath();
-        ctx.arc(cx, cy, bandRadius, start * DEG, angleAt(norm) * DEG, ccw);
-        ctx.stroke();
+        if (typeof p.fill.color === 'string' && p.fill.zones.length) {
+          const cuts = [
+            0,
+            norm,
+            ...p.fill.zones.flatMap((z) => [normalize(z.from, min, max), normalize(z.to, min, max)]),
+          ]
+            .filter((n) => n >= 0 && n <= norm)
+            .sort((a, b) => a - b)
+            .filter((n, i, all) => i === 0 || Math.abs(n - all[i - 1]!) > 1e-8);
+          for (let i = 0; i < cuts.length - 1; i++) {
+            const from = cuts[i]!;
+            const to = cuts[i + 1]!;
+            if (to <= from) continue;
+            const sample = min + ((from + to) * 0.5) * (max - min);
+            ctx.strokeStyle = zoneColorAt(sample) as string;
+            ctx.beginPath();
+            ctx.arc(cx, cy, bandRadius, angleAt(from) * DEG, angleAt(to) * DEG, ccw);
+            ctx.stroke();
+          }
+        } else {
+          ctx.strokeStyle = baseFill as string | CanvasGradient;
+          ctx.beginPath();
+          ctx.arc(cx, cy, bandRadius, angleAt(0) * DEG, angleAt(norm) * DEG, ccw);
+          ctx.stroke();
+        }
       } else {
         const n = p.fill.segments;
         const gap = p.fill.segmentGap;
         const segSweep = sweep / n;
-        const lit = Math.round(norm * n);
+        const lit = Math.round(mappedNorm * n);
         ctx.lineCap = 'butt';
         for (let i = 0; i < lit; i++) {
           const a0 = start + segSweep * i + Math.sign(sweep) * (gap / 2);
           const a1 = start + segSweep * (i + 1) - Math.sign(sweep) * (gap / 2);
-          const segValue = min + ((i + 0.5) / n) * (max - min);
-          ctx.strokeStyle =
-            typeof p.fill.color === 'string'
-              ? rc.zoneColor(p.fill.zones, segValue, baseFill as string)
-              : baseFill;
+          const segValue = p.scale
+            ? unmapGaugeScale((i + 0.5) / n, min, max, p.scale)
+            : min + ((i + 0.5) / n) * (max - min);
+          ctx.strokeStyle = zoneColorAt(segValue) as string | CanvasGradient;
           ctx.beginPath();
           ctx.arc(cx, cy, bandRadius, a0 * DEG, a1 * DEG, ccw);
           ctx.stroke();
