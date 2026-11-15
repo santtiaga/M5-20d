@@ -48,10 +48,13 @@ export const arcGaugeRenderer: ComponentRenderer<ArcGaugeComponent> = {
     const R = Math.min(w, h) / 2;
     const start = p.startAngle;
     const sweep = p.sweepAngle;
-    const angleAt = (n: number) =>
-      start +
-      sweep *
-        (p.scale ? mapGaugeScale(min + clamp(n, 0, 1) * (max - min), min, max, p.scale) : clamp(n, 0, 1));
+    const angleAt = (n: number) => {
+      const raw = clamp(n, 0, 1);
+      const position = p.scale
+        ? mapGaugeScale(min + raw * (max - min), min, max, p.scale)
+        : raw;
+      return start + sweep * position;
+    };
     const ccw = sweep < 0;
 
     // Radii, from the outside in.

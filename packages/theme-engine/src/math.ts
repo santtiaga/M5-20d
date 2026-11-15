@@ -40,7 +40,12 @@ export interface GaugeScale {
 }
 
 /** Map a gauge value through a validated, three-part piecewise-linear scale. */
-export function mapGaugeScale(value: number, min: number, max: number, scale: GaugeScale): number {
+export function mapGaugeScale(
+  value: number,
+  min: number,
+  max: number,
+  scale: GaugeScale,
+): number {
   const n = normalize(value, min, max);
   if (
     !(min < scale.value1 && scale.value1 < scale.value2 && scale.value2 < max) ||
@@ -56,7 +61,12 @@ export function mapGaugeScale(value: number, min: number, max: number, scale: Ga
 }
 
 /** Inverse of mapGaugeScale: return the raw gauge value at an angular fraction. */
-export function unmapGaugeScale(position: number, min: number, max: number, scale: GaugeScale): number {
+export function unmapGaugeScale(
+  position: number,
+  min: number,
+  max: number,
+  scale: GaugeScale,
+): number {
   const p = clamp(position, 0, 1);
   if (
     !(min < scale.value1 && scale.value1 < scale.value2 && scale.value2 < max) ||

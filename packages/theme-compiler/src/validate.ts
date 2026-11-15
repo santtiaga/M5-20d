@@ -349,7 +349,11 @@ export function validateTheme(doc: unknown): ValidationReport {
         );
       } else {
         const { min, max } = bindingRange(c.binding);
-        if (!(min < c.props.scale.value1 && c.props.scale.value1 < c.props.scale.value2 && c.props.scale.value2 < max))
+        if (
+          !(min < c.props.scale.value1 &&
+            c.props.scale.value1 < c.props.scale.value2 &&
+            c.props.scale.value2 < max)
+        )
           out.error(
             'gauge.scale-range',
             `Scale breakpoints of "${cid}" must lie strictly inside the binding range ${min}..${max}.`,
