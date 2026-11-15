@@ -226,9 +226,22 @@ uniform vec4 u_minorc;
 uniform vec4 u_redc;
 uniform vec4 u_labels;  // show, every, labelR, glyphHeightPx
 uniform vec4 u_range;   // min, max, divisor, decimals(0)
+uniform vec4 u_scale;   // value breakpoints (normalised), angular fractions
 uniform vec4 u_labelc;
 uniform float u_digit_adv; // advance of a digit in glyph heights
 float digitCode(float d) { return d; } // codes 0-9 are the digits in the idv7lol atlas
+float mapScale(float v) {
+  if (u_scale.x < 0.0) return v;
+  if (v <= u_scale.x) return v * u_scale.z / max(u_scale.x, 0.00001);
+  if (v <= u_scale.y) return u_scale.z + (v - u_scale.x) * (u_scale.w - u_scale.z) / max(u_scale.y - u_scale.x, 0.00001);
+  return u_scale.w + (v - u_scale.y) * (1.0 - u_scale.w) / max(1.0 - u_scale.y, 0.00001);
+}
+float unmapScale(float v) {
+  if (u_scale.x < 0.0) return v;
+  if (v <= u_scale.z) return v * u_scale.x / max(u_scale.z, 0.00001);
+  if (v <= u_scale.w) return u_scale.x + (v - u_scale.z) * (u_scale.y - u_scale.x) / max(u_scale.w - u_scale.z, 0.00001);
+  return u_scale.y + (v - u_scale.w) * (1.0 - u_scale.y) / max(1.0 - u_scale.w, 0.00001);
+}
 void main() {
   vec2 p = px() - u_size * 0.5;
   float a0 = u_arc.x;
@@ -242,13 +255,13 @@ void main() {
   float rel = sw >= 0.0 ? mod(ang - a0, 360.0) : mod(a0 - ang, 360.0);
   float asw = abs(sw);
   // nearest tick index
-  float fi = rel / asw * total;
+  float fi = unmapScale(rel / asw) * total;
   float i = floor(fi + 0.5);
   if (i >= 0.0 && i <= total && rel <= asw + 2.0) {
     bool isMajor = mod(i, minor + 1.0) < 0.5;
     float len = isMajor ? u_ticks.z : u_ticks.w;
     float wdt = isMajor ? u_tickw.x : u_tickw.y;
-    float ta = radians(a0 + sw * (i / total));
+    float ta = radians(a0 + sw * mapScale(i / total));
     vec2 dir = vec2(cos(ta), sin(ta));
     vec2 a = dir * u_tickw.z;
     vec2 b = dir * (u_tickw.z - len);
@@ -262,9 +275,9 @@ void main() {
     // Past either end of the arc, the nearest end's numeral still owns the pixel,
     // so the first and last numerals aren't cut along the arc's edge.
     float lrel = rel <= asw ? rel : (rel - asw < 360.0 - rel ? asw : 0.0);
-    float mi = floor(lrel / asw * major + 0.5);
+    float mi = floor(unmapScale(lrel / asw) * major + 0.5);
     if (mi >= 0.0 && mi <= major && mod(mi, u_labels.y) < 0.5) {
-      float la = radians(a0 + sw * (mi / major));
+      float la = radians(a0 + sw * mapScale(mi / major));
       vec2 centre = vec2(cos(la), sin(la)) * u_labels.z;
       float h = u_labels.w;
       float v = (u_range.x + (u_range.y - u_range.x) * (mi / major)) / u_range.z;
@@ -320,6 +333,123 @@ void main() {
     col = over(col, vec4(0.0, 0.0, 0.0, 0.5 * exp(-sd * sd * 2.0)));
   }
   col = over(col, vec4(u_color.rgb, u_color.a * cov(d)));
+  if (u_cap.y > 0.5) col = over(col, vec4(u_capc.rgb, u_capc.a * cov(length(p) - u_cap.x)));
+  gl_FragColor = col;
+}
+`;
+
+export const TACHOMETER_FS = `${PRELUDE}${COMMON}
+uniform vec4 u_arc;       // startDeg, sweepDeg, 0, 0
+uniform vec4 u_geo;       // outerR, unused, fillWidth, bandCentreR
+uniform float u_rpm;      // normalised binding value, 0..1
+uniform vec4 u_scale;     // value1, value2, position1, position2 (normalised)
+uniform vec4 u_fill;
+uniform vec4 u_fill2;
+uniform vec4 u_seg;       // mode(0 solid,1 segments), count, gapDeg, roundCaps
+uniform vec4 u_zone[4];
+uniform vec4 u_zonec[4];
+uniform vec4 u_glow;
+uniform vec4 u_glowc;
+uniform vec4 u_needle;    // lengthPx, tailPx, widthPx, shape(0 tapered,1 bar,2 arrow)
+uniform vec4 u_needlec;
+uniform vec4 u_cap;       // radiusPx, show, 0, 0
+uniform vec4 u_capc;
+uniform vec4 u_shadow;    // enabled, blurPx, 0, 0
+float mapScale(float v) {
+  v = clamp(v, 0.0, 1.0);
+  if (u_scale.x < 0.0) return v;
+  if (v <= u_scale.x) return v * u_scale.z / max(u_scale.x, 0.00001);
+  if (v <= u_scale.y) return u_scale.z + (v - u_scale.x) * (u_scale.w - u_scale.z) / max(u_scale.y - u_scale.x, 0.00001);
+  return u_scale.w + (v - u_scale.y) * (1.0 - u_scale.w) / max(1.0 - u_scale.y, 0.00001);
+}
+float unmapScale(float v) {
+  v = clamp(v, 0.0, 1.0);
+  if (u_scale.x < 0.0) return v;
+  if (v <= u_scale.z) return v * u_scale.x / max(u_scale.z, 0.00001);
+  if (v <= u_scale.w) return u_scale.x + (v - u_scale.z) * (u_scale.y - u_scale.x) / max(u_scale.w - u_scale.z, 0.00001);
+  return u_scale.y + (v - u_scale.w) * (1.0 - u_scale.y) / max(1.0 - u_scale.w, 0.00001);
+}
+float arcBandDist(vec2 p, float r, float a0, float a1, float halfW, float roundCaps) {
+  float sweep = a1 - a0;
+  float ang = angDeg(p);
+  float rel = sweep >= 0.0 ? mod(ang - a0, 360.0) : mod(a0 - ang, 360.0);
+  float span = abs(sweep);
+  float radial = abs(length(p) - r) - halfW;
+  if (rel <= span) return radial;
+  if (roundCaps > 0.5) {
+    float ea = radians(rel - span < 360.0 - rel ? a1 : a0);
+    vec2 e = vec2(cos(ea), sin(ea)) * r;
+    return length(p - e) - halfW;
+  }
+  float along = radians(min(rel - span, 360.0 - rel)) * length(p);
+  return max(radial, along);
+}
+void main() {
+  vec2 p = px() - u_size * 0.5;
+  float rpm = clamp(u_rpm, 0.0, 1.0);
+  float endNorm = mapScale(rpm);
+  float a0 = u_arc.x;
+  float sw = u_arc.y;
+  vec4 col = vec4(0.0);
+  if (u_geo.z > 0.0 && endNorm > 0.0005) {
+    float ang = angDeg(p);
+    float rel = sw >= 0.0 ? mod(ang - a0, 360.0) : mod(a0 - ang, 360.0);
+    float n = clamp(rel / max(abs(sw), 0.00001), 0.0, 1.0);
+    float rpmAt = unmapScale(n);
+    vec4 fc = u_fill;
+    if (u_fill2.a > 0.0) fc = mix(u_fill, u_fill2, n);
+    float d;
+    if (u_seg.x < 0.5) {
+      for (int i = 0; i < 4; i++) {
+        if (u_zone[i].z > 0.5 && rpmAt >= u_zone[i].x && rpmAt < u_zone[i].y) fc = u_zonec[i];
+      }
+      d = arcBandDist(p, u_geo.w, a0, a0 + sw * endNorm, u_geo.z * 0.5, u_seg.w);
+    } else {
+      float segs = max(u_seg.y, 1.0);
+      float segSw = sw / segs;
+      float idx = floor(rel / abs(segSw));
+      float lit = floor(endNorm * segs + 0.5);
+      if (idx >= lit || rel > abs(sw)) { gl_FragColor = col; return; }
+      float g = u_seg.z * 0.5;
+      float sa = a0 + segSw * idx + sign(sw) * g;
+      float sb = a0 + segSw * (idx + 1.0) - sign(sw) * g;
+      float segRpm = unmapScale((idx + 0.5) / segs);
+      for (int i = 0; i < 4; i++) {
+        if (u_zone[i].z > 0.5 && segRpm >= u_zone[i].x && segRpm < u_zone[i].y) fc = u_zonec[i];
+      }
+      d = arcBandDist(p, u_geo.w, sa, sb, u_geo.z * 0.5, u_seg.w);
+    }
+    if (u_glow.x > 0.5) {
+      float gd = d / max(u_glow.y, 1.0);
+      col = over(col, vec4(u_glowc.rgb, u_glowc.a * 0.6 * exp(-gd * gd * 2.0) * step(0.0, d)));
+    }
+    col = over(col, vec4(fc.rgb, fc.a * cov(d)));
+  }
+  if (u_needle.x > 0.0) {
+    float a = radians(a0 + sw * endNorm);
+    mat2 rot = mat2(cos(a), -sin(a), sin(a), cos(a));
+    vec2 q = rot * p;
+    float len = u_needle.x;
+    float tail = u_needle.y;
+    float hw = u_needle.z * 0.5;
+    float nd;
+    if (u_needle.w < 0.5) {
+      float t = clamp((q.x + tail) / (len + tail), 0.0, 1.0);
+      float w = mix(hw, 0.6, t);
+      nd = max(abs(q.y) - w, max(-tail - q.x, q.x - len));
+    } else if (u_needle.w < 1.5) {
+      nd = max(abs(q.y) - hw, max(-tail - q.x, q.x - len));
+    } else {
+      float t = clamp((q.x + tail) / (len * 0.8 + tail), 0.0, 1.0);
+      float w = q.x < len * 0.8 ? mix(hw, hw * 1.6, t) : hw * 1.6 * (len - q.x) / (len * 0.2);
+      nd = max(abs(q.y) - w, max(-tail - q.x, q.x - len));
+    }
+    if (u_shadow.x > 0.5) {
+      float sd = nd / max(u_shadow.y, 1.0);
+      col = over(col, vec4(0.0, 0.0, 0.0, 0.5 * exp(-sd * sd * 2.0)));
+    }
+    col = over(col, vec4(u_needlec.rgb, u_needlec.a * cov(nd)));
+  }
   if (u_cap.y > 0.5) col = over(col, vec4(u_capc.rgb, u_capc.a * cov(length(p) - u_cap.x)));
   gl_FragColor = col;
 }
@@ -655,6 +785,7 @@ export const SHADERS: Readonly<Record<ShaderKind, string>> = {
   'arc-band': ARC_BAND_FS,
   'arc-ticks': ARC_TICKS_FS,
   needle: NEEDLE_FS,
+  tachometer: TACHOMETER_FS,
   bar: BAR_FS,
   'bar-ticks': BAR_TICKS_FS,
   text: TEXT_FS,
