@@ -267,7 +267,11 @@ export const GaugeScaleSchema = z
   })
   .superRefine((scale, ctx) => {
     if (scale.value1 >= scale.value2)
-      ctx.addIssue({ code: 'custom', path: ['value2'], message: 'value2 must be greater than value1.' });
+      ctx.addIssue({
+        code: 'custom',
+        path: ['value2'],
+        message: 'value2 must be greater than value1.',
+      });
     if (!(0 < scale.position1 && scale.position1 < scale.position2 && scale.position2 < 1))
       ctx.addIssue({
         code: 'custom',

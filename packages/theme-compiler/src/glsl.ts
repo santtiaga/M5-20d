@@ -231,12 +231,14 @@ uniform vec4 u_labelc;
 uniform float u_digit_adv; // advance of a digit in glyph heights
 float digitCode(float d) { return d; } // codes 0-9 are the digits in the idv7lol atlas
 float mapScale(float v) {
+  v = clamp(v, 0.0, 1.0);
   if (u_scale.x < 0.0) return v;
   if (v <= u_scale.x) return v * u_scale.z / max(u_scale.x, 0.00001);
   if (v <= u_scale.y) return u_scale.z + (v - u_scale.x) * (u_scale.w - u_scale.z) / max(u_scale.y - u_scale.x, 0.00001);
   return u_scale.w + (v - u_scale.y) * (1.0 - u_scale.w) / max(1.0 - u_scale.y, 0.00001);
 }
 float unmapScale(float v) {
+  v = clamp(v, 0.0, 1.0);
   if (u_scale.x < 0.0) return v;
   if (v <= u_scale.z) return v * u_scale.x / max(u_scale.z, 0.00001);
   if (v <= u_scale.w) return u_scale.x + (v - u_scale.z) * (u_scale.y - u_scale.x) / max(u_scale.w - u_scale.z, 0.00001);
@@ -255,7 +257,7 @@ void main() {
   float rel = sw >= 0.0 ? mod(ang - a0, 360.0) : mod(a0 - ang, 360.0);
   float asw = abs(sw);
   // nearest tick index
-  float fi = unmapScale(rel / asw) * total;
+  float fi = unmapScale(rel / max(asw, 0.00001)) * total;
   float i = floor(fi + 0.5);
   if (i >= 0.0 && i <= total && rel <= asw + 2.0) {
     bool isMajor = mod(i, minor + 1.0) < 0.5;
@@ -275,7 +277,7 @@ void main() {
     // Past either end of the arc, the nearest end's numeral still owns the pixel,
     // so the first and last numerals aren't cut along the arc's edge.
     float lrel = rel <= asw ? rel : (rel - asw < 360.0 - rel ? asw : 0.0);
-    float mi = floor(unmapScale(lrel / asw) * major + 0.5);
+    float mi = floor(unmapScale(lrel / max(asw, 0.00001)) * major + 0.5);
     if (mi >= 0.0 && mi <= major && mod(mi, u_labels.y) < 0.5) {
       float la = radians(a0 + sw * mapScale(mi / major));
       vec2 centre = vec2(cos(la), sin(la)) * u_labels.z;

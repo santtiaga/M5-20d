@@ -600,7 +600,12 @@ function buildArcGauge(ctx: Ctx, f: FlatComponent, c: ArcGaugeComponent): void {
     // The track is static: it is created once and never receives an RPM update.
     if (trackWidth > 0 || p.redline.show) {
       const track = basePiece(ctx, f, `${c.id}:track`, 'arc-band', square);
-      track.statics['u_arc'] = [p.startAngle, p.sweepAngle, p.track.cap === 'round' ? 1 : 0, 0];
+      track.statics['u_arc'] = [
+        p.startAngle,
+        p.sweepAngle,
+        p.track.cap === 'round' ? 1 : 0,
+        0,
+      ];
       track.statics['u_geo'] = [R, trackWidth, 0, bandR];
       track.statics['u_value'] = [0];
       track.statics['u_red'] = [
@@ -641,7 +646,12 @@ function buildArcGauge(ctx: Ctx, f: FlatComponent, c: ArcGaugeComponent): void {
         p.needle.width,
         { tapered: 0, bar: 1, arrow: 2 }[p.needle.shape],
       ];
-      t.statics['u_cap'] = [p.needle.cap.radius, p.needle.show && p.needle.cap.show ? 1 : 0, 0, 0];
+      t.statics['u_cap'] = [
+        p.needle.cap.radius,
+        p.needle.show && p.needle.cap.show ? 1 : 0,
+        0,
+        0,
+      ];
       t.statics['u_shadow'] = [
         p.needle.shadow && p.needle.show ? 1 : 0,
         p.needle.shadow?.blur ?? 0,
