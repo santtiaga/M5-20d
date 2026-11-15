@@ -63,6 +63,14 @@ describe('vehicle profiles', () => {
     expect(profileHasSignal(p, 'engine.rpm')).toBe(true);
   });
 
+  it('models the G30 B47 MHEV as turbo ICE, not PHEV traction hybrid', () => {
+    const p = getProfile('g30-b47-mhev')!;
+    expect(profileHasSignal(p, 'engine.rpm')).toBe(true);
+    expect(profileHasSignal(p, 'engine.boost')).toBe(true);
+    expect(profileHasSignal(p, 'transmission.oil.temp')).toBe(true);
+    expect(profileHasSignal(p, 'hybrid.battery.soc')).toBe(false);
+  });
+
   it('removes combustion signals from the electric profile and applies overrides', () => {
     const bev = profileSignals(getProfile('bev')!);
     expect(bev.some((s) => s.id === 'engine.rpm')).toBe(false);

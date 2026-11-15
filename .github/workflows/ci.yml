@@ -34,6 +34,19 @@ jobs:
         run: npm run themes:validate
       - name: Build packages
         run: npm run build
+      - name: Build MGU theme bundles
+        run: npx tsx tools/build/build-mgu-themes.ts
+      - name: Upload MGU app bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: idv7lol-mgu-theme-bundle
+          path: |
+            apps/idv7lol/theme_g30_f90.js
+            apps/idv7lol/shaders.js
+            apps/idv7lol/themes_index.js
+            apps/idv7lol/app.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Build Studio front end
         run: npm run build -w @idv7lol/studio
 

@@ -95,6 +95,45 @@ describe('createComponent', () => {
   });
 });
 
+describe('nonlinear gauge scales', () => {
+  it('accepts an ordered piecewise scale on a circular gauge', () => {
+    const gauge = ComponentSchema.parse({
+      id: 'tacho',
+      type: 'gauge.arc',
+      x: 0,
+      y: 0,
+      width: 500,
+      height: 500,
+      binding: { signal: 'engine.rpm', min: 0, max: 5000 },
+      props: {
+        scale: { value1: 2000, value2: 4500, position1: 0.32, position2: 0.92 },
+      },
+    });
+    if (gauge.type !== 'gauge.arc') throw new Error('type');
+    expect(gauge.props.scale).toEqual({
+      value1: 2000,
+      value2: 4500,
+      position1: 0.32,
+      position2: 0.92,
+    });
+  });
+
+  it('rejects unordered breakpoints and angular positions', () => {
+    const result = ComponentSchema.safeParse({
+      id: 'tacho',
+      type: 'gauge.arc',
+      x: 0,
+      y: 0,
+      width: 500,
+      height: 500,
+      props: {
+        scale: { value1: 4500, value2: 2000, position1: 0.92, position2: 0.32 },
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
 describe('image assets', () => {
   it('needs a file path or embedded PNG data, and keeps edits through JSON', () => {
     const t = createEmptyTheme();

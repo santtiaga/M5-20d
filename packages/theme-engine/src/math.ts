@@ -31,6 +31,48 @@ export function normalize(v: number, min: number, max: number): number {
   return clamp((v - min) / (max - min), 0, 1);
 }
 
+/** Piecewise linear gauge scale: two value breakpoints and their angular fractions. */
+export interface GaugeScale {
+  value1: number;
+  value2: number;
+  position1: number;
+  position2: number;
+}
+
+/** Map a gauge value through a validated, three-part piecewise-linear scale. */
+export function mapGaugeScale(value: number, min: number, max: number, scale: GaugeScale): number {
+  const n = normalize(value, min, max);
+  if (
+    !(min < scale.value1 && scale.value1 < scale.value2 && scale.value2 < max) ||
+    !(0 < scale.position1 && scale.position1 < scale.position2 && scale.position2 < 1)
+  )
+    return n;
+  const a = normalize(scale.value1, min, max);
+  const b = normalize(scale.value2, min, max);
+  if (n <= a) return (n / a) * scale.position1;
+  if (n <= b)
+    return scale.position1 + ((n - a) / (b - a)) * (scale.position2 - scale.position1);
+  return scale.position2 + ((n - b) / (1 - b)) * (1 - scale.position2);
+}
+
+/** Inverse of mapGaugeScale: return the raw gauge value at an angular fraction. */
+export function unmapGaugeScale(position: number, min: number, max: number, scale: GaugeScale): number {
+  const p = clamp(position, 0, 1);
+  if (
+    !(min < scale.value1 && scale.value1 < scale.value2 && scale.value2 < max) ||
+    !(0 < scale.position1 && scale.position1 < scale.position2 && scale.position2 < 1)
+  )
+    return min + (max - min) * p;
+  const a = normalize(scale.value1, min, max);
+  const b = normalize(scale.value2, min, max);
+  let n: number;
+  if (p <= scale.position1) n = (p / scale.position1) * a;
+  else if (p <= scale.position2)
+    n = a + ((p - scale.position1) / (scale.position2 - scale.position1)) * (b - a);
+  else n = b + ((p - scale.position2) / (1 - scale.position2)) * (1 - b);
+  return min + (max - min) * n;
+}
+
 export function polar(
   cx: number,
   cy: number,

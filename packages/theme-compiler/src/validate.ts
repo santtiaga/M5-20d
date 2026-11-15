@@ -340,6 +340,23 @@ export function validateTheme(doc: unknown): ValidationReport {
         componentId: cid,
         path: 'props.asset',
       });
+    if (c.type === 'gauge.arc' && c.props.scale) {
+      if (!c.binding) {
+        out.error(
+          'gauge.scale-binding',
+          `Gauge "${cid}" has a nonlinear scale but no numeric binding.`,
+          { componentId: cid, path: 'props.scale' },
+        );
+      } else {
+        const { min, max } = bindingRange(c.binding);
+        if (!(min < c.props.scale.value1 && c.props.scale.value1 < c.props.scale.value2 && c.props.scale.value2 < max))
+          out.error(
+            'gauge.scale-range',
+            `Scale breakpoints of "${cid}" must lie strictly inside the binding range ${min}..${max}.`,
+            { componentId: cid, path: 'props.scale' },
+          );
+      }
+    }
     // zones
     const zones =
       c.type === 'gauge.arc' || c.type === 'gauge.bar'

@@ -16,6 +16,7 @@ import {
   anchorFraction,
   flattenComponents,
   normalize,
+  mapGaugeScale,
   type FlatComponent,
 } from '@idv7lol/theme-engine';
 import { convert, getSignal, unitSymbol, type UnitId } from '@idv7lol/vehicle-signals';
@@ -573,47 +574,129 @@ function buildArcGauge(ctx: Ctx, f: FlatComponent, c: ArcGaugeComponent): void {
     warn(ctx, 'gauge.zones', 'Only the first 4 colour zones are drawn on the car.', c.id);
 
   let outer = R;
-  const redFrom = cb && p.redline.show ? normalize(p.redline.from, cb.rangeMin, cb.rangeMax) : 2;
+  const mapped = !!p.scale && !!cb;
+  const redFrom =
+    cb && p.redline.show
+      ? p.scale
+        ? mapGaugeScale(p.redline.from, cb.rangeMin, cb.rangeMax, p.scale)
+        : normalize(p.redline.from, cb.rangeMin, cb.rangeMax)
+      : 2;
+  const scaleUniform =
+    p.scale && cb
+      ? [
+          normalize(p.scale.value1, cb.rangeMin, cb.rangeMax),
+          normalize(p.scale.value2, cb.rangeMin, cb.rangeMax),
+          p.scale.position1,
+          p.scale.position2,
+        ]
+      : [-1, 0, 0, 0];
   if (p.redline.show && p.redline.placement === 'outer') outer -= p.redline.width + 4;
   const trackWidth = p.track.show ? p.track.width : 0;
   const fillWidth = p.fill.show ? p.fill.width : 0;
   const bandWidth = Math.max(trackWidth, fillWidth);
   const bandR = outer - bandWidth / 2;
 
-  const band = basePiece(ctx, f, `${c.id}:band`, 'arc-band', square);
-  band.statics['u_arc'] = [p.startAngle, p.sweepAngle, p.track.cap === 'round' ? 1 : 0, 0];
-  band.statics['u_geo'] = [R, trackWidth, fillWidth, bandR];
-  band.statics['u_value'] = [0];
-  band.statics['u_red'] = [
-    redFrom,
-    p.redline.width,
-    p.redline.placement === 'outer' ? 0 : 1,
-    p.redline.show ? 1 : 0,
-  ];
-  band.statics['u_seg'] = [
-    p.fill.mode === 'segments' ? 1 : 0,
-    p.fill.segments,
-    p.fill.segmentGap,
-    p.fill.cap === 'round' ? 1 : 0,
-  ];
-  band.statics['u_glow'] = [p.glow.show ? 1 : 0, p.glow.blur, 0, 0];
-  const zs = zoneStatics(p.fill.zones, cb);
-  band.statics['u_zone'] = zs.statics;
-  band.colors['u_track'] = p.track.show ? p.track.color : TRANSPARENT;
-  const fu = fillUniforms(ctx, p.fill.show ? p.fill.color : undefined, c.id);
-  band.colors['u_fill'] = fu.colors['u_fill']!;
-  band.colors['u_fill2'] = fu.colors['u_fill2']!;
-  band.colors['u_redc'] = p.redline.color;
-  band.colors['u_glowc'] = p.glow.color;
-  band.colors['u_zonec'] = zs.colors as unknown as Color; // array; see colorArrays below
-  (band as unknown as { colorArrays: Record<string, Color[]> }).colorArrays = {
-    u_zonec: zs.colors,
-  };
-  delete band.colors['u_zonec'];
-  if (cb) band.dynamics.push({ kind: 'norm', uniform: 'u_value', binding: cb });
-  if (p.fill.cap === 'round')
-    info(ctx, 'gauge.cap', 'Round arc caps are drawn square on the car.', c.id);
-  ctx.pieces.push(band);
+  if (mapped && cb && p.scale) {
+    // The track is static: it is created once and never receives an RPM update.
+    if (trackWidth > 0 || p.redline.show) {
+      const track = basePiece(ctx, f, `${c.id}:track`, 'arc-band', square);
+      track.statics['u_arc'] = [p.startAngle, p.sweepAngle, p.track.cap === 'round' ? 1 : 0, 0];
+      track.statics['u_geo'] = [R, trackWidth, 0, bandR];
+      track.statics['u_value'] = [0];
+      track.statics['u_red'] = [
+        redFrom,
+        p.redline.width,
+        p.redline.placement === 'outer' ? 0 : 1,
+        p.redline.show ? 1 : 0,
+      ];
+      track.statics['u_seg'] = [0, 1, 0, 0];
+      track.statics['u_glow'] = [0, 0, 0, 0];
+      track.colors['u_track'] = p.track.show ? p.track.color : TRANSPARENT;
+      track.colors['u_fill'] = TRANSPARENT;
+      track.colors['u_fill2'] = TRANSPARENT;
+      track.colors['u_redc'] = p.redline.color;
+      track.colors['u_glowc'] = TRANSPARENT;
+      ctx.pieces.push(track);
+    }
+
+    // Fill and needle share one effect layer and one eased RPM uniform.
+    if (p.fill.show || p.needle.show) {
+      const t = basePiece(ctx, f, `${c.id}:tachometer`, 'tachometer', square);
+      t.statics['u_arc'] = [p.startAngle, p.sweepAngle, 0, 0];
+      t.statics['u_geo'] = [R, 0, fillWidth, bandR];
+      t.statics['u_rpm'] = [0];
+      t.statics['u_scale'] = scaleUniform;
+      t.statics['u_seg'] = [
+        p.fill.mode === 'segments' ? 1 : 0,
+        p.fill.segments,
+        p.fill.segmentGap,
+        p.fill.cap === 'round' ? 1 : 0,
+      ];
+      const zs = zoneStatics(p.fill.zones, cb);
+      t.statics['u_zone'] = zs.statics;
+      t.statics['u_glow'] = [p.glow.show ? 1 : 0, p.glow.blur, 0, 0];
+      t.statics['u_needle'] = [
+        p.needle.show ? p.needle.length * R : 0,
+        p.needle.tail * R,
+        p.needle.width,
+        { tapered: 0, bar: 1, arrow: 2 }[p.needle.shape],
+      ];
+      t.statics['u_cap'] = [p.needle.cap.radius, p.needle.show && p.needle.cap.show ? 1 : 0, 0, 0];
+      t.statics['u_shadow'] = [
+        p.needle.shadow && p.needle.show ? 1 : 0,
+        p.needle.shadow?.blur ?? 0,
+        0,
+        0,
+      ];
+      const fu = fillUniforms(ctx, p.fill.show ? p.fill.color : undefined, c.id);
+      t.colors['u_fill'] = fu.colors['u_fill']!;
+      t.colors['u_fill2'] = fu.colors['u_fill2']!;
+      t.colors['u_glowc'] = p.glow.color;
+      t.colors['u_needlec'] = p.needle.color;
+      t.colors['u_capc'] = p.needle.cap.color;
+      (t as unknown as { colorArrays: Record<string, Color[]> }).colorArrays = {
+        u_zonec: zs.colors,
+      };
+      if (cb) t.dynamics.push({ kind: 'norm', uniform: 'u_rpm', binding: cb });
+      ctx.pieces.push(t);
+    }
+  } else {
+    const band = basePiece(ctx, f, `${c.id}:band`, 'arc-band', square);
+    band.statics['u_arc'] = [p.startAngle, p.sweepAngle, p.track.cap === 'round' ? 1 : 0, 0];
+    band.statics['u_geo'] = [R, trackWidth, fillWidth, bandR];
+    band.statics['u_value'] = [0];
+    band.statics['u_red'] = [
+      redFrom,
+      p.redline.width,
+      p.redline.placement === 'outer' ? 0 : 1,
+      p.redline.show ? 1 : 0,
+    ];
+    band.statics['u_seg'] = [
+      p.fill.mode === 'segments' ? 1 : 0,
+      p.fill.segments,
+      p.fill.segmentGap,
+      p.fill.cap === 'round' ? 1 : 0,
+    ];
+    band.statics['u_glow'] = [p.glow.show ? 1 : 0, p.glow.blur, 0, 0];
+    const zs = zoneStatics(p.fill.zones, cb);
+    band.statics['u_zone'] = zs.statics;
+    band.colors['u_track'] = p.track.show ? p.track.color : TRANSPARENT;
+    const fu = fillUniforms(ctx, p.fill.show ? p.fill.color : undefined, c.id);
+    band.colors['u_fill'] = fu.colors['u_fill']!;
+    band.colors['u_fill2'] = fu.colors['u_fill2']!;
+    band.colors['u_redc'] = p.redline.color;
+    band.colors['u_glowc'] = p.glow.color;
+    band.colors['u_zonec'] = zs.colors as unknown as Color; // array; see colorArrays below
+    (band as unknown as { colorArrays: Record<string, Color[]> }).colorArrays = {
+      u_zonec: zs.colors,
+    };
+    delete band.colors['u_zonec'];
+    if (cb) band.dynamics.push({ kind: 'norm', uniform: 'u_value', binding: cb });
+    if (p.fill.cap === 'round')
+      info(ctx, 'gauge.cap', 'Round arc caps are drawn square on the car.', c.id);
+    ctx.pieces.push(band);
+    }
+  }
 
   const tickOuter = outer - bandWidth - p.ticks.inset - 4;
   if (
@@ -623,6 +706,7 @@ function buildArcGauge(ctx: Ctx, f: FlatComponent, c: ArcGaugeComponent): void {
     const t = basePiece(ctx, f, `${c.id}:ticks`, 'arc-ticks', square);
     t.usesFont = true;
     t.statics['u_arc'] = [p.startAngle, p.sweepAngle, 0, 0];
+    t.statics['u_scale'] = scaleUniform;
     t.statics['u_ticks'] = [p.ticks.major, p.ticks.minor, p.ticks.majorLength, p.ticks.minorLength];
     t.statics['u_tickw'] = [
       p.ticks.majorWidth,
@@ -685,7 +769,7 @@ function buildArcGauge(ctx: Ctx, f: FlatComponent, c: ArcGaugeComponent): void {
     }
   }
 
-  if (p.needle.show && cb) {
+  if (!mapped && p.needle.show && cb) {
     const n = basePiece(ctx, f, `${c.id}:needle`, 'needle', square);
     n.statics['u_angle'] = [p.startAngle];
     n.statics['u_needle'] = [

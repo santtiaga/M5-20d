@@ -1,3 +1,7 @@
+# Unreleased
+
+- Add native BMW G30/G31 F90-inspired B47 MHEV theme with a 0–5000 rpm non-linear tachometer and 4000/4500 rpm warning zones.
+
 # Changelog
 
 All notable changes to idv7lol are documented here. The format follows
