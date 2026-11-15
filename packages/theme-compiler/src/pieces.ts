@@ -695,7 +695,6 @@ function buildArcGauge(ctx: Ctx, f: FlatComponent, c: ArcGaugeComponent): void {
     if (p.fill.cap === 'round')
       info(ctx, 'gauge.cap', 'Round arc caps are drawn square on the car.', c.id);
     ctx.pieces.push(band);
-    }
   }
 
   const tickOuter = outer - bandWidth - p.ticks.inset - 4;
