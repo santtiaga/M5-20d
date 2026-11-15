@@ -78,8 +78,6 @@ export const LinePropsSchema = z.object({
 export const ArcPropsSchema = z.object({
   startAngle: z.number().default(135),
   sweepAngle: z.number().min(-360).max(360).default(270),
-  /** Optional piecewise-linear mapping from binding values to arc fractions. */
-  scale: GaugeScaleSchema.optional(),
   stroke: StrokeSchema,
   /** Optional pie fill between the arc and the centre. */
   fill: FillSchema.optional(),
@@ -281,6 +279,8 @@ export const GaugeScaleSchema = z
 export const ArcGaugePropsSchema = z.object({
   startAngle: z.number().default(135),
   sweepAngle: z.number().min(-360).max(360).default(270),
+  /** Optional piecewise-linear mapping from binding values to arc fractions. */
+  scale: GaugeScaleSchema.optional(),
   track: z
     .object({
       show: z.boolean().default(true),
