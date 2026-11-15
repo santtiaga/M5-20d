@@ -407,17 +407,20 @@ void main() {
     } else {
       float segs = max(u_seg.y, 1.0);
       float segSw = sw / segs;
-      float idx = floor(rel / abs(segSw));
+      float idx = floor(rel / max(abs(segSw), 0.00001));
       float lit = floor(endNorm * segs + 0.5);
-      if (idx >= lit || rel > abs(sw)) { gl_FragColor = col; return; }
-      float g = u_seg.z * 0.5;
-      float sa = a0 + segSw * idx + sign(sw) * g;
-      float sb = a0 + segSw * (idx + 1.0) - sign(sw) * g;
-      float segRpm = unmapScale((idx + 0.5) / segs);
-      for (int i = 0; i < 4; i++) {
-        if (u_zone[i].z > 0.5 && segRpm >= u_zone[i].x && segRpm < u_zone[i].y) fc = u_zonec[i];
+      if (idx < lit && rel <= abs(sw)) {
+        float g = u_seg.z * 0.5;
+        float sa = a0 + segSw * idx + sign(sw) * g;
+        float sb = a0 + segSw * (idx + 1.0) - sign(sw) * g;
+        float segRpm = unmapScale((idx + 0.5) / segs);
+        for (int i = 0; i < 4; i++) {
+          if (u_zone[i].z > 0.5 && segRpm >= u_zone[i].x && segRpm < u_zone[i].y) fc = u_zonec[i];
+        }
+        d = arcBandDist(p, u_geo.w, sa, sb, u_geo.z * 0.5, u_seg.w);
+      } else {
+        d = 100000.0;
       }
-      d = arcBandDist(p, u_geo.w, sa, sb, u_geo.z * 0.5, u_seg.w);
     }
     if (u_glow.x > 0.5) {
       float gd = d / max(u_glow.y, 1.0);
